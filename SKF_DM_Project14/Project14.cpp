@@ -1,28 +1,103 @@
+#include <SFML/Graphics.hpp>
 #include <iostream>
-#include <cmath>
-#include "Project14.h"
+#include <random>
+#include "brown_motion.h"
 
-bool Coordinates::operator==(Coordinates & p)
+double Particle::collidesX() const
 {
-	return (x == p.x || y == p.y);
+	double dt = -1.;
+	if (vx > 0.0)
+	{
+		dt = (1. - radius - rx) / vx;
+	}
+	else if (vx < 0.0)
+	{
+		dt = (radius - rx) / vx;
+	}
+
+	return dt;
 }
-Coordinates Coordinates::operator+(Coordinates & p)
+
+double Particle::collidesY() const
 {
-	return Coordinates(this->x + p.x, this->y + p.y);
+	double dt = -1.;
+	if (vy > 0.0)
+	{
+		dt = (1. - radius - ry) / vy;
+	}
+	else if (vy < 0.0)
+	{
+		dt = (radius - ry) / vy;
+	}
+
+	return dt;
 }
-Coordinates Coordinates::operator-(Coordinates & p)
+
+double Particle::collides(Particle const& b) const
 {
-	return Coordinates(this->x - p.x, this->y - p.y);
+	double const drx = b.rx - rx;
+	double const dry = b.ry - ry;
+
+	double const dvx = b.vx - vx;
+	double const dvy = b.vy - vy;
+
+	double const dvdr = (dvx * drx + dvy * dry);
+	if (dvdr >= 0) return -1.;
+
+	double const dvdv = (dvx*dvx + dvy*dvy);
+	double const drdr = (drx*drx + dry*dry);
+	double const r = (radius + b.radius);
+
+	double const d = dvdr*dvdr - (dvdv*(drdr - r*r));
+	if (d < 0) return -1.;
+
+	double const dt = -((dvdr + std::sqrt(d)) / dvdv);
+	return dt;
 }
-Coordinates Coordinates::operator*(double & p)
+
+
+void Particle::bounceX()
 {
-	return Coordinates(this->x * p, this->y * p);
+	vx = -vx;
 }
-Coordinates Coordinates::operator/(double & p)
+
+void Particle::bounceY()
 {
-	return Coordinates(this->x / p, this->y / p);
+	vy = -vy;
 }
-double Coordinates::operator*(Coordinates & p)
+
+void Particle::bounce(Particle& b)
 {
-	return double(this->x * p.x + this->y * p.y);
+	double const drx = b.rx - rx;
+	double const dry = b.ry - ry;
+
+	double const dvx = b.vx - vx;
+	double const dvy = b.vy - vy;
+
+	double const dvdr = (dvx * drx + dvy * dry);
+	double const r = (radius + b.radius);
+
+	double const J = (2.*mass*b.mass*dvdr) / (r*(mass + b.mass));
+	double const Jx = (J*drx) / r;
+	double const Jy = (J*dry) / r;
+
+	vx = vx + Jx / mass;
+	vy = vy + Jy / mass;
+
+	b.vx = b.vx - Jx / b.mass;
+	b.vy = b.vy - Jy / b.mass;
+
+	collisionCount++;
+	b.collisionCount++;
+}
+
+int Particle::getCollisionCount()
+{
+	return collisionCount;
+}
+
+void Particle::move(double dt)
+{
+	rx = rx + dt*vx;
+	ry = ry + dt*vy;
 }
