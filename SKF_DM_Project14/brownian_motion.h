@@ -13,13 +13,17 @@ private:
 	double ry;
 	double vx;
 	double vy;
-
+	const sf::Color &color;
 	int collisionCount;
 
 public:
-	Particle() : radius(1), mass(1), rx(0), ry(0), vx(0), vy(0), collisionCount(0) {}
-	Particle(double r, double m, double r_x, double r_y, double v_x, double v_y) 
-		:radius(r), mass(m), rx(r_x), ry(r_y), vx(v_x), vy(v_y), collisionCount(0) {}
+
+	Particle() 
+		: radius(0.02), mass(0.1), rx(0), ry(0), vx(0.02), vy(0.02), color(sf::Color::Green), collisionCount(0) {}
+	Particle(double r_x, double r_y)
+		: radius(0.02), mass(0.1), rx(r_x), ry(r_y), vx(0.02), vy(0.02), color(sf::Color::Green), collisionCount(0) {}
+	Particle(double r, double m, double r_x, double r_y, double v_x, double v_y, const sf::Color &Color)
+		:radius(r), mass(m), rx(r_x), ry(r_y), vx(v_x), vy(v_y), color(Color), collisionCount(0) {}
 
 	double collidesX() const;
 	double collidesY() const;
@@ -36,8 +40,9 @@ public:
 	sf::Vector2f getPosition() const { return sf::Vector2f((float)rx, (float)ry); };
 	float getRadius() const { return (float)radius; }
 
+	sf::Color getColor() { return this->color; }
+
 
 };
 
 #endif // !BROWN_MOTION_H__
-
