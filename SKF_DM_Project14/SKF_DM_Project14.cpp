@@ -10,11 +10,11 @@
 #include "brown_motion.h"
 #include "event.h"
 
-//std::mt19937 generator(123);
-//std::uniform_real_distribution<double> dis(0.0, 1.0);
+std::mt19937 generator(123);
+std::uniform_real_distribution<double> dis(0.0, 1.0);
 
 int static const SIZE = 600;
-int static const N = 2;
+int static const N = 20;
 
 void DrawParticle(Particle const& p, sf::CircleShape & shape, sf::RenderWindow & window)
 {
@@ -22,6 +22,7 @@ void DrawParticle(Particle const& p, sf::CircleShape & shape, sf::RenderWindow &
 	auto const radius = SIZE * p.getRadius();
 	shape.setPosition(pos.x * SIZE - radius, pos.y * SIZE - radius);
 	shape.setRadius(SIZE * p.getRadius());
+	//shape.setFillColor(p.getColor);
 	window.draw(shape);
 }
 
@@ -56,6 +57,10 @@ void InvalidateRelatedEvents(Event const& executedEvent, std::list<Event> & even
 		if (eventIt->containParticle(executedEvent.getA()) || eventIt->containParticle(executedEvent.getB()))
 		{
 			eventIt = events.erase(eventIt);
+		}
+		else
+		{
+			eventIt++;
 		}
 	}
 }
@@ -95,14 +100,21 @@ int main()
 {
 	sf::RenderWindow window(sf::VideoMode(SIZE, SIZE), "SFML works!");
 	sf::CircleShape shape((float)SIZE);
-	shape.setFillColor(sf::Color::Green);
-
-	Particle a(0.02, 0.1, 0.2, 0.2, 0.01, -0.02);
-	Particle b(0.02, 0.1, 0.2, 0.7, 0.01, 0.02);
-
+	//shape.setFillColor(sf::Color::Green);
+	
 	std::array<Particle*, N> particles;
+	Particle a(0.1, 0.5, 0.2, 0.2, 0.2, -0.2, sf::Color::Red);
 	particles[0] = &a;
-	particles[1] = &b;
+
+	for (size_t i = 1; i < N; ++i)
+	{
+		double Xrand = dis(generator);
+		double Yrand = dis(generator);
+		double x = Xrand;
+		double y = Yrand;
+		particles[i] = new Particle(x, y);
+	}
+
 
 	std::list<Event> events;
 
@@ -117,7 +129,8 @@ int main()
 		}
 	}
 
-	double dt = 0.01;
+	double const basicDt = 0.01;
+	double dt = basicDt;
 	while (window.isOpen())
 	{
 
@@ -131,45 +144,47 @@ int main()
 		Event executedEvent;
 		if (!events.empty())
 		{
-			auto event = events.front();
-			if ((event.getTime() - dt) < 0.)
+			if (events.front().getTime() < dt)
 			{
-				event.execute();
 				executedEvent = events.front();
-				events.pop_front();
+				dt = executedEvent.getTime();
 			}
-		}
-
-		if (executedEvent.getValid())
-		{
-			InvalidateRelatedEvents(executedEvent, events);
-
-			auto a = executedEvent.getA();
-			auto b = executedEvent.getB();
-			for (auto particle : particles)
+			
+			for (auto & elem : particles)
 			{
-				if (a != nullptr && a != particle)
-				{
-					CheckParticles(a, particle, events);
-				}
+				elem->move(dt);
+			}
+			for (auto & elem : events)
+			{
+				elem.updateTime(-dt);
+			}
 
-				if (b != nullptr && b != particle)
+			if (executedEvent.getValid())
+			{
+				executedEvent.execute();
+				events.pop_front();
+
+				InvalidateRelatedEvents(executedEvent, events);
+
+				auto a = executedEvent.getA();
+				auto b = executedEvent.getB();
+				for (auto particle : particles)
 				{
-					CheckParticles(b, particle, events);
+					if (a != nullptr && a != particle)
+					{
+						CheckParticles(a, particle, events);
+					}
+
+					if (b != nullptr && b != particle)
+					{
+						CheckParticles(b, particle, events);
+					}
 				}
 			}
 		}
-
-		for (auto & elem : particles)
-		{
-			elem->move(dt);
-		}
-		for (auto & elem : events)
-		{
-			elem.updateTime(-dt);
-		}
-
+		
 		DrawParticles(particles, shape, window);
+		dt = basicDt;
 	}
 	return 0;
 }
