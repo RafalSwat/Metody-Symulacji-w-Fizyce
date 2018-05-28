@@ -14,7 +14,7 @@ std::mt19937 generator(123);
 std::uniform_real_distribution<double> dis(0.0, 1.0);
 
 int static const SIZE = 600;
-int static const N = 20;
+int static const N = 100;
 
 void DrawParticle(Particle const& p, sf::CircleShape & shape, sf::RenderWindow & window)
 {
@@ -101,18 +101,28 @@ int main()
 	sf::RenderWindow window(sf::VideoMode(SIZE, SIZE), "SFML works!");
 	sf::CircleShape shape((float)SIZE);
 	//shape.setFillColor(sf::Color::Green);
-	
+
+	Particle a(0.1, 0.1, 0.5, 0.5, 0.001, 0.001, sf::Color::Red);
 	std::array<Particle*, N> particles;
-	Particle a(0.1, 0.5, 0.2, 0.2, 0.2, -0.2, sf::Color::Red);
 	particles[0] = &a;
 
 	for (size_t i = 1; i < N; ++i)
 	{
 		double Xrand = dis(generator);
 		double Yrand = dis(generator);
-		double x = Xrand;
-		double y = Yrand;
-		particles[i] = new Particle(x, y);
+		double vx = (Xrand - 0.5) * 0.01;
+		double vy = (Yrand - 0.5) * 0.01;
+
+		for (size_t j = 0; j < particles.size(); j++)
+		{
+			double x = Xrand;
+			double y = Yrand;
+			double d = pow((x - particles[i - 1]->getX()), 2) + pow((y - particles[i - 1]->getY()), 2);
+			if(sqrt(d) > particles[j]->getRadius() + particles[i]->getRadius())
+				particles[i] = new Particle(x, y, vx, vy);
+
+		}
+		
 	}
 
 
@@ -149,7 +159,7 @@ int main()
 				executedEvent = events.front();
 				dt = executedEvent.getTime();
 			}
-			
+
 			for (auto & elem : particles)
 			{
 				elem->move(dt);
@@ -182,7 +192,7 @@ int main()
 				}
 			}
 		}
-		
+
 		DrawParticles(particles, shape, window);
 		dt = basicDt;
 	}
